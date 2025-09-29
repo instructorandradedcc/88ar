@@ -8,7 +8,8 @@
     <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
     
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
-    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
     <script type="importmap">
         {
             "imports": {
@@ -31,6 +32,45 @@
             left: 0;
             width: 100%;
             z-index: 9999;
+        }
+        #apk-preview {
+            border: 10px solid #1f2937;
+            border-radius: 40px;
+            width: 300px;
+            height: 600px;
+            background-color: white;
+            box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+            overflow: hidden;
+            position: relative;
+        }
+        #phone-screen-container {
+            height: 100%;
+            overflow-y: auto;
+            scrollbar-width: none;
+        }
+        #phone-screen-container::-webkit-scrollbar {
+            display: none;
+        }
+        #apk-preview::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60px;
+            height: 20px;
+            background-color: #1f2937;
+            border-bottom-left-radius: 10px;
+            border-bottom-right-radius: 10px;
+            z-index: 10;
+        }
+        .editable-preview-element {
+            outline: 2px dashed transparent;
+            transition: outline-color 0.3s;
+        }
+        .editable-preview-element:hover {
+            outline-color: #f43f5e;
+            cursor: text;
         }
         .loader {
             border: 4px solid #f3f3f3;
@@ -165,53 +205,56 @@
         </div>
         
         <div id="page-apk" class="page bg-white p-6 rounded-lg shadow-md">
-            <h2 class="text-2xl font-semibold mb-4 border-b pb-2">Paso 4: Generar HTML Autocontenido</h2>
-            
-            <div class="bg-blue-50 border-l-4 border-blue-500 text-blue-700 p-4 mb-6" role="alert">
-                <p class="font-bold">Nuevo Flujo de Trabajo Simplificado</p>
-                <p>Este paso ahora genera un único archivo HTML con todos los recursos incrustados. Solo copia el código, guárdalo como `index.html` y súbelo a tu hosting (como GitHub Pages).</p>
+            <h2 class="text-2xl font-semibold mb-4 border-b pb-2">Paso 4: Configurar y Generar tu Proyecto</h2>
+            <div class="flex flex-col md:flex-row gap-8 md:items-start">
+                <div class="flex-1">
+                    <h3 class="text-lg font-semibold mb-4">Detalles del Proyecto</h3>
+                    <div>
+                        <label for="apk-name" class="block mb-2 font-medium text-gray-700">Nombre del Proyecto:</label>
+                        <input type="text" id="apk-name" placeholder="Ej: Mi_Libro_Magico" class="w-full p-2 border rounded">
+                    </div>
+                    <div class="mt-4">
+                        <label for="apk-icon" class="block mb-2 font-medium text-gray-700">Ícono (Portada del libro):</label>
+                        <input type="file" id="apk-icon" accept="image/png, image/jpeg" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"/>
+                    </div>
+                    <div class="mt-4">
+                        <label for="apk-welcome-title" class="block mb-2 font-medium text-gray-700">Título de Bienvenida:</label>
+                        <input type="text" id="apk-welcome-title" value="¡Bienvenido a la Experiencia AR!" class="w-full p-2 border rounded">
+                    </div>
+                    <div class="mt-4">
+                        <label for="apk-welcome-subtitle" class="block mb-2 font-medium text-gray-700">Subtítulo/Descripción:</label>
+                        <textarea id="apk-welcome-subtitle" rows="3" class="w-full p-2 border rounded">Descubre el mundo de la Realidad Aumentada educativa. Presiona el botón para comenzar tu aventura.</textarea>
+                    </div>
+
+                     <div class="mt-8 text-center">
+                        <button id="generate-files-btn" class="bg-green-500 text-white font-bold py-3 px-6 rounded-lg hover:bg-green-600 text-lg transition-transform transform hover:scale-105 shadow-lg">
+                            Generar y Descargar .ZIP
+                        </button>
+                        <p id="generation-status" class="text-sm text-gray-500 mt-2"></p>
+                    </div>
+                </div>
+                <div class="flex-1 flex flex-col items-center">
+                    <h3 class="text-lg font-semibold mb-4">Previsualización Interactiva</h3>
+                    <div id="apk-preview">
+                        <div id="phone-screen-container">
+                            <div id="phone-screen-preview" class="w-full h-full flex flex-col justify-center items-center p-4 text-center bg-gradient-to-br from-indigo-500 to-purple-600 text-white">
+                                <img id="apk-icon-preview" src="https://placehold.co/150x150/ffffff/94a3b8?text=Icono" alt="Ícono App" class="w-36 h-36 object-cover rounded-3xl shadow-lg mb-6">
+                                <h1 id="apk-title-preview" class="text-2xl font-bold mb-2 editable-preview-element" contenteditable="true">¡Bienvenido a la Experiencia AR!</h1>
+                                <p id="apk-subtitle-preview" class="text-sm mb-8 px-4 editable-preview-element" contenteditable="true">Descubre el mundo de la Realidad Aumentada educativa. Presiona el botón para comenzar tu aventura.</p>
+                                <button class="w-4/5 bg-green-500 text-white font-bold py-3 px-8 rounded-full hover:bg-green-600 transition duration-300 shadow-md">
+                                    Iniciar Experiencia AR
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
-
-            <div class="flex-1">
-                <h3 class="text-lg font-semibold mb-4">Detalles de la Aplicación</h3>
-                <div>
-                    <label for="apk-name" class="block mb-2 font-medium text-gray-700">Título de la página HTML:</label>
-                    <input type="text" id="apk-name" placeholder="Ej: Mi Libro Mágico" class="w-full p-2 border rounded">
-                </div>
-                <div class="mt-4">
-                    <label for="apk-icon" class="block mb-2 font-medium text-gray-700">Ícono para la pantalla de bienvenida:</label>
-                    <input type="file" id="apk-icon" accept="image/png, image/jpeg" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"/>
-                </div>
-                <div class="mt-4">
-                    <label for="apk-welcome-title" class="block mb-2 font-medium text-gray-700">Título de Bienvenida:</label>
-                    <input type="text" id="apk-welcome-title" value="¡Bienvenido a la Experiencia AR!" class="w-full p-2 border rounded">
-                </div>
-                <div class="mt-4">
-                    <label for="apk-welcome-subtitle" class="block mb-2 font-medium text-gray-700">Subtítulo/Descripción:</label>
-                    <textarea id="apk-welcome-subtitle" rows="3" class="w-full p-2 border rounded">Descubre el mundo de la Realidad Aumentada educativa. Presiona el botón para comenzar tu aventura.</textarea>
-                </div>
-
-                 <div class="mt-8 text-center">
-                    <button id="generate-html-btn" class="bg-green-500 text-white font-bold py-3 px-6 rounded-lg hover:bg-green-600 text-lg transition-transform transform hover:scale-105 shadow-lg">
-                        Generar Código HTML
-                    </button>
-                    <p id="generation-status" class="text-sm text-gray-500 mt-2 min-h-[20px]"></p>
-                </div>
-            </div>
-
-            <div id="html-result-container" class="hidden mt-8">
-                <div class="flex justify-between items-center mb-2">
-                    <label for="html-output" class="block font-medium text-gray-700">Código HTML Generado:</label>
-                    <button id="copy-html-btn" class="bg-gray-600 text-white font-bold py-1 px-3 rounded-lg hover:bg-gray-700 transition duration-300 text-sm">Copiar al Portapapeles</button>
-                </div>
-                <textarea id="html-output" rows="15" class="w-full p-2 border rounded bg-gray-900 text-green-300 font-mono text-xs" readonly></textarea>
-            </div>
-
-            <div class="mt-8 flex justify-center">
+             <div class="mt-8 flex justify-center">
                 <button id="back-to-ar-btn" class="bg-gray-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-gray-600 transition duration-300">Atrás</button>
             </div>
         </div>
-        </div>
+
+    </div>
     
     <script type="module">
     import * as THREE from 'three';
@@ -719,42 +762,32 @@
             }
         });
         
-        // ================================================================= //
-        // --- LÓGICA MODIFICADA PARA GENERAR HTML AUTOCONTENIDO --- //
-        // ================================================================= //
+        // --- LÓGICA DE GENERACIÓN DE ZIP ---
         const apkNameInput = document.getElementById('apk-name');
         const apkIconInput = document.getElementById('apk-icon');
+        const generateBtn = document.getElementById('generate-files-btn');
+        const generationStatus = document.getElementById('generation-status');
+        
+        const apkIconPreview = document.getElementById('apk-icon-preview');
+        const apkTitlePreview = document.getElementById('apk-title-preview');
+        const apkSubtitlePreview = document.getElementById('apk-subtitle-preview');
+
         const apkWelcomeTitleInput = document.getElementById('apk-welcome-title');
         const apkWelcomeSubtitleInput = document.getElementById('apk-welcome-subtitle');
-        const generateBtn = document.getElementById('generate-html-btn');
-        const generationStatus = document.getElementById('generation-status');
-        const htmlResultContainer = document.getElementById('html-result-container');
-        const htmlOutput = document.getElementById('html-output');
-        const copyHtmlBtn = document.getElementById('copy-html-btn');
 
-        // Evento para el nuevo botón de copiar
-        copyHtmlBtn.addEventListener('click', () => {
-            htmlOutput.select();
-            document.execCommand('copy');
-            generationStatus.textContent = '¡Copiado al portapapeles!';
-            setTimeout(() => {
-                if (htmlOutput.value) {
-                    generationStatus.textContent = 'Código generado exitosamente.';
-                }
-            }, 2000);
+        apkIconInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                apkIconPreview.src = URL.createObjectURL(file);
+            }
         });
-
-        // Función auxiliar para convertir un archivo a Data URI (Base64)
-        function fileToDataURI(file) {
-            return new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.onload = () => resolve(reader.result);
-                reader.onerror = reject;
-                reader.readAsDataURL(file);
-            });
-        }
         
-        // Evento principal para generar el HTML
+        apkWelcomeTitleInput.addEventListener('input', (e) => { apkTitlePreview.textContent = e.target.value; });
+        apkWelcomeSubtitleInput.addEventListener('input', (e) => { apkSubtitlePreview.textContent = e.target.value; });
+        apkTitlePreview.addEventListener('input', (e) => { apkWelcomeTitleInput.value = e.target.textContent; });
+        apkSubtitlePreview.addEventListener('input', (e) => { apkWelcomeSubtitleInput.value = e.target.textContent; });
+
+
         generateBtn.addEventListener('click', async () => {
             const appName = apkNameInput.value.trim();
             const appIconFile = apkIconInput.files[0];
@@ -762,53 +795,56 @@
             const welcomeSubtitle = apkWelcomeSubtitleInput.value.trim();
 
             if (!appName || !appIconFile || !welcomeTitle) {
-                alert("Por favor, completa el Título, el Ícono y el Título de Bienvenida.");
+                alert("Por favor completa el Nombre del Proyecto, Ícono y Título de Bienvenida.");
                 return;
             }
             if (state.assets.length === 0) {
-                alert("No se han cargado recursos de AR en el Paso 1.");
+                alert("No se han cargado recursos AR en el Paso 1.");
                 return;
             }
 
-            generationStatus.textContent = "Incrustando recursos... Esto puede tardar un momento...";
-            htmlResultContainer.classList.add('hidden');
+            generationStatus.textContent = "Generando archivos, por favor espera...";
             
             try {
-                // Convertir todos los archivos necesarios a Data URI
-                const iconDataUri = await fileToDataURI(appIconFile);
+                const zip = new JSZip();
+                const finalHtml = createFinalHtml(appName, welcomeTitle, welcomeSubtitle);
+                zip.file("index.html", finalHtml);
                 
-                const assetsWithDataUris = await Promise.all(
-                    state.assets.map(async (asset) => ({
-                        ...asset,
-                        markerDataUrl: await fileToDataURI(asset.markerFile),
-                        modelDataUrl: await fileToDataURI(asset.modelFile),
-                    }))
-                );
+                zip.file("icon.png", appIconFile);
 
-                // Crear el HTML final con los datos incrustados
-                const finalHtml = createFinalHtml(appName, welcomeTitle, welcomeSubtitle, iconDataUri, assetsWithDataUris);
+                const markersFolder = zip.folder("markers");
+                const modelsFolder = zip.folder("models");
+                for (const asset of state.assets) {
+                    markersFolder.file(asset.markerFile.name, asset.markerFile);
+                    modelsFolder.file(asset.modelFile.name, asset.modelFile);
+                }
+
+                const content = await zip.generateAsync({ type: "blob" });
+                const link = document.createElement("a");
+                link.href = URL.createObjectURL(content);
+                link.download = `${appName.replace(/\s/g, '_')}_AR_Project.zip`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
                 
-                // Mostrar el resultado en el textarea
-                htmlOutput.value = finalHtml;
-                htmlResultContainer.classList.remove('hidden');
-                generationStatus.textContent = "¡Código generado exitosamente! Cópialo y guárdalo en un archivo index.html.";
-
+                generationStatus.textContent = "¡Archivos generados y descargados exitosamente!";
             } catch (error) {
-                console.error("Error generando el HTML autocontenido:", error);
-                generationStatus.textContent = "Ocurrió un error al generar el código.";
+                console.error("Error generando el ZIP:", error);
+                generationStatus.textContent = "Ocurrió un error al generar los archivos.";
             }
         });
 
-        // Función que construye el string del archivo HTML final
-        function createFinalHtml(appName, welcomeTitle, welcomeSubtitle, iconDataUri, assetsWithDataUris) {
-            // Usa los Data URIs directamente en los atributos src
-            const markerSrcs = assetsWithDataUris.map(a => a.markerDataUrl).join(';');
+        // ================================================================= //
+        // --- FUNCIÓN MODIFICADA PARA CREAR EL HTML FINAL --- //
+        // ================================================================= //
+        function createFinalHtml(appName, welcomeTitle, welcomeSubtitle) {
+            const markerSrcs = state.assets.map(a => `./markers/${a.markerFile.name}`).join(';');
             
-            const assetItems = assetsWithDataUris.map(asset => 
-                `<a-asset-item id="model-${asset.id}" src="${asset.modelDataUrl}"></a-asset-item>`
-            ).join('\n            ');
+            const assetItems = state.assets.map(asset => 
+                `<a-asset-item id="model-${asset.id}" src="./models/${asset.modelFile.name}"></a-asset-item>`
+            ).join('\n\t\t\t');
 
-            const entities = assetsWithDataUris.map((asset, index) => {
+            const entities = state.assets.map((asset, index) => {
                 const t = asset.transform;
                 const finalScale = asset.normalizationFactor * t.scale.x;
                 return `
@@ -820,25 +856,33 @@
                     scale="${finalScale} ${finalScale} ${finalScale}">
                 </a-gltf-model>
             </a-entity>`;
-            }).join('\n        ');
+            }).join('\n\t\t');
 
             const correctedScript = `
         document.addEventListener('DOMContentLoaded', () => {
             const sceneEl = document.querySelector('a-scene');
             const welcomeScreen = document.getElementById('welcome-screen');
             const startButton = document.getElementById('start-ar-button');
+            const loadingOverlay = document.getElementById('loading-overlay'); // <-- 1. Obtener el overlay
 
+            // Esperar a que la escena de A-Frame esté completamente cargada
             sceneEl.addEventListener('loaded', () => {
                 const mindarSystem = sceneEl.systems['mindar-image'];
                 
+                // Añadir el listener al botón de inicio
                 startButton.addEventListener('click', () => {
-                    mindarSystem.start();
-                    welcomeScreen.classList.add('hidden');
+                    welcomeScreen.classList.add('hidden'); // Ocultar bienvenida
+                    loadingOverlay.classList.remove('hidden'); // <-- 2. Mostrar pantalla de carga
+                    mindarSystem.start(); // Iniciar AR
+                });
+
+                // Cuando la escena comience a renderizar el primer cuadro...
+                sceneEl.addEventListener('renderstart', () => {
+                    loadingOverlay.classList.add('hidden'); // <-- 3. Ocultar pantalla de carga
                 });
             });
         });`;
 
-            // Plantilla final del HTML. Nota cómo los src usan las variables con Data URIs.
             return `
 <!DOCTYPE html>
 <html lang="es">
@@ -850,6 +894,7 @@
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"><\/script>
     <style>
         body { margin: 0; font-family: sans-serif; }
+        .hidden { display: none; }
         #welcome-screen {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1000;
             display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center;
@@ -861,21 +906,48 @@
         #welcome-screen h1 { font-size: 1.8em; margin: 0 0 8px 0; }
         #welcome-screen p { font-size: 1em; max-width: 300px; margin: 0 auto 32px auto; opacity: 0.9; }
         #start-ar-button { background: #4CAF50; color: white; border: none; padding: 15px 40px; font-size: 1.2em; border-radius: 50px; cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.2); font-weight: bold; }
-        a-scene { z-index: -1; }
-        #welcome-screen.hidden + a-scene { z-index: auto; }
+        
+        /* --- ESTILOS PARA LA PANTALLA DE CARGA --- */
+        #loading-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 2000;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            background-color: rgba(0, 0, 0, 0.8);
+            color: white;
+        }
+        .loading-spinner {
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #3498db;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1.5s linear infinite;
+        }
+        #loading-overlay p {
+            margin-top: 20px;
+            font-size: 1.2em;
+            font-weight: bold;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body>
     <div id="welcome-screen">
-        <img src="${iconDataUri}" alt="Ícono de la App">
+        <img src="./icon.png" alt="Ícono de la App">
         <h1>${welcomeTitle}</h1>
         <p>${welcomeSubtitle}</p>
         <button id="start-ar-button">Iniciar Experiencia AR</button>
     </div>
+
+    <div id="loading-overlay" class="hidden">
+        <div class="loading-spinner"></div>
+        <p>Cargando componentes, por favor espere...</p>
+    </div>
+
     <a-scene mindar-image="imageTargetSrc: ${markerSrcs}; autoStart: false; uiLoading: no; uiError: no;" color-space="sRGB" renderer="colorManagement: true, physicallyCorrectLights" vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false">
-        <a-assets>
-            ${assetItems}
-        <\/a-assets>
+        <a-assets>${assetItems}<\/a-assets>
         <a-camera position="0 0 0" look-controls="enabled: false"><\/a-camera>
         ${entities}
     </a-scene>
