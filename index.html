@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Creador de Experiencias AR</title>
+    <title>Creador de Experiencias AR para GitHub</title>
     <!-- Tailwind CSS para el diseño -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- A-Frame (incluye Three.js r158) -->
@@ -11,9 +11,7 @@
     
     <!-- MindAR para A-Frame -->
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
-    <!-- JSZip para generar el archivo .zip -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-
+    
     <!-- Three.js via Import Maps para el editor 3D -->
     <script type="importmap">
         {
@@ -38,47 +36,6 @@
             width: 100%;
             z-index: 9999;
         }
-        #apk-preview {
-            border: 10px solid #1f2937; /* Borde de teléfono más oscuro */
-            border-radius: 40px; /* Bordes más redondeados */
-            width: 300px;
-            height: 600px; /* Un poco más alto, como un teléfono moderno */
-            background-color: white;
-            box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
-            overflow: hidden;
-            position: relative;
-        }
-        #phone-screen-container {
-            height: 100%;
-            overflow-y: auto;
-            scrollbar-width: none; /* Ocultar scrollbar en Firefox */
-        }
-        #phone-screen-container::-webkit-scrollbar {
-            display: none; /* Ocultar scrollbar en Chrome/Safari */
-        }
-        /* Notch del teléfono */
-        #apk-preview::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 60px;
-            height: 20px;
-            background-color: #1f2937;
-            border-bottom-left-radius: 10px;
-            border-bottom-right-radius: 10px;
-            z-index: 10;
-        }
-        /* Estilos para la previsualización editable */
-        .editable-preview-element {
-            outline: 2px dashed transparent;
-            transition: outline-color 0.3s;
-        }
-        .editable-preview-element:hover {
-            outline-color: #f43f5e; /* Un color que resalte */
-            cursor: text;
-        }
         /* Loader styles */
         .loader {
             border: 4px solid #f3f3f3;
@@ -92,6 +49,17 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+        #generated-code {
+            background-color: #1e293b;
+            color: #e2e8f0;
+            border-radius: 8px;
+            padding: 1rem;
+            max-height: 400px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            font-family: 'Courier New', Courier, monospace;
+        }
     </style>
 </head>
 <body class="bg-gray-200 text-gray-800 font-sans">
@@ -99,10 +67,10 @@
     <div id="app" class="container mx-auto p-6 md:p-8 max-w-5xl bg-white rounded-xl shadow-lg my-8 overflow-y-auto" style="max-height: 85vh;">
         <!-- ENCABEZADO CON LOGO -->
         <div class="flex justify-center items-center mb-6">
-             <img src="logofundacion.jpg" alt="Logo Fundación" class="h-20 mr-4" onerror="this.onerror=null;this.src='https://placehold.co/80x80/e2e8f0/94a3b8?text=Logo';">
+             <img src="https://placehold.co/80x80/e2e8f0/94a3b8?text=Logo" alt="Logo Fundación" class="h-20 mr-4" onerror="this.onerror=null;this.src='https://placehold.co/80x80/e2e8f0/94a3b8?text=Logo';">
             <div>
-                <h1 class="text-3xl font-bold text-center text-indigo-600">Creador de Experiencias AR</h1>
-                <p class="text-center text-gray-500">Un nuevo flujo de trabajo para usar tus propias imágenes coloridas.</p>
+                <h1 class="text-3xl font-bold text-center text-indigo-600">Creador de Experiencias AR para GitHub</h1>
+                <p class="text-center text-gray-500">Transforma tus recursos en una página web de RA autocontenida.</p>
             </div>
         </div>
 
@@ -211,64 +179,64 @@
                 <div id="ar-active-controls" class="hidden p-4 bg-black bg-opacity-50">
                     <div class="flex justify-between items-center max-w-4xl mx-auto">
                         <button id="stop-ar-btn" class="bg-red-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-red-600 transition duration-300">Detener Cámara</button>
-                        <button id="goto-apk-btn-active" class="bg-teal-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-teal-600 transition duration-300">Siguiente: Crear App</button>
+                        <button id="goto-publish-btn-active" class="bg-teal-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-teal-600 transition duration-300">Siguiente: Publicar Página</button>
                     </div>
                 </div>
             </div>
         </div>
         
-        <!-- PÁGINA 4: Crear App -->
-        <div id="page-apk" class="page bg-white p-6 rounded-lg shadow-md">
-            <h2 class="text-2xl font-semibold mb-4 border-b pb-2">Paso 4: Configurar y Generar tu App</h2>
-            <div class="flex flex-col md:flex-row gap-8 md:items-start">
-                <!-- Columna de Configuración -->
-                <div class="flex-1">
-                    <h3 class="text-lg font-semibold mb-4">Detalles de la Aplicación</h3>
+        <!-- PÁGINA 4: Publicar Página -->
+        <div id="page-publish" class="page bg-white p-6 rounded-lg shadow-md">
+            <div id="publish-config-view">
+                <h2 class="text-2xl font-semibold mb-4 border-b pb-2">Paso 4: Configurar y Generar tu Página Web</h2>
+                <div>
+                    <h3 class="text-lg font-semibold mb-4">Detalles de la Página</h3>
                     <div>
-                        <label for="apk-name" class="block mb-2 font-medium text-gray-700">Nombre de la App:</label>
-                        <input type="text" id="apk-name" placeholder="Ej: Mi Libro Mágico" class="w-full p-2 border rounded">
+                        <label for="publish-name" class="block mb-2 font-medium text-gray-700">Título de la Página (tag `<title>`):</label>
+                        <input type="text" id="publish-name" placeholder="Ej: Mi Libro Mágico AR" class="w-full p-2 border rounded">
                     </div>
                     <div class="mt-4">
-                        <label for="apk-icon" class="block mb-2 font-medium text-gray-700">Ícono de la App (Portada del libro):</label>
-                        <input type="file" id="apk-icon" accept="image/png, image/jpeg" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"/>
-                    </div>
-                    <!-- NUEVO: Campos de texto editables -->
-                    <div class="mt-4">
-                        <label for="apk-welcome-title" class="block mb-2 font-medium text-gray-700">Título de Bienvenida:</label>
-                        <input type="text" id="apk-welcome-title" value="¡Bienvenido a la Experiencia AR!" class="w-full p-2 border rounded">
+                        <label for="publish-icon" class="block mb-2 font-medium text-gray-700">Ícono de Bienvenida (Portada del libro):</label>
+                        <input type="file" id="publish-icon" accept="image/png, image/jpeg" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"/>
+                        <img id="publish-icon-preview" src="https://placehold.co/100x100/e2e8f0/94a3b8?text=Icono" class="mt-2 rounded-lg shadow-md w-24 h-24 object-cover"/>
                     </div>
                     <div class="mt-4">
-                        <label for="apk-welcome-subtitle" class="block mb-2 font-medium text-gray-700">Subtítulo/Descripción:</label>
-                        <textarea id="apk-welcome-subtitle" rows="3" class="w-full p-2 border rounded">Descubre el mundo de la Realidad Aumentada educativa. Presiona el botón para comenzar tu aventura.</textarea>
+                        <label for="publish-welcome-title" class="block mb-2 font-medium text-gray-700">Título de Bienvenida:</label>
+                        <input type="text" id="publish-welcome-title" value="¡Bienvenido a la Experiencia AR!" class="w-full p-2 border rounded">
                     </div>
-
+                    <div class="mt-4">
+                        <label for="publish-welcome-subtitle" class="block mb-2 font-medium text-gray-700">Subtítulo/Descripción:</label>
+                        <textarea id="publish-welcome-subtitle" rows="3" class="w-full p-2 border rounded">Descubre el mundo de la Realidad Aumentada educativa. Presiona el botón para comenzar tu aventura.</textarea>
+                    </div>
                      <div class="mt-8 text-center">
-                        <button id="generate-files-btn" class="bg-green-500 text-white font-bold py-3 px-6 rounded-lg hover:bg-green-600 text-lg transition-transform transform hover:scale-105 shadow-lg">
-                            Generar y Descargar Archivos
+                        <button id="generate-page-btn" class="bg-green-500 text-white font-bold py-3 px-6 rounded-lg hover:bg-green-600 text-lg transition-transform transform hover:scale-105 shadow-lg">
+                            Generar Página para GitHub
                         </button>
-                        <p id="generation-status" class="text-sm text-gray-500 mt-2"></p>
-                    </div>
-                </div>
-                <!-- Columna de Previsualización -->
-                <div class="flex-1 flex flex-col items-center">
-                    <h3 class="text-lg font-semibold mb-4">Previsualización Interactiva</h3>
-                    <div id="apk-preview">
-                        <div id="phone-screen-container">
-                            <!-- Esta pantalla simula el welcome.html que generará el script de Python -->
-                            <div id="phone-screen-preview" class="w-full h-full flex flex-col justify-center items-center p-4 text-center bg-gradient-to-br from-indigo-500 to-purple-600 text-white">
-                                <img id="apk-icon-preview" src="https://placehold.co/150x150/ffffff/94a3b8?text=Icono" alt="Ícono App" class="w-36 h-36 object-cover rounded-3xl shadow-lg mb-6">
-                                <h1 id="apk-title-preview" class="text-2xl font-bold mb-2 editable-preview-element" contenteditable="true">¡Bienvenido a la Experiencia AR!</h1>
-                                <p id="apk-subtitle-preview" class="text-sm mb-8 px-4 editable-preview-element" contenteditable="true">Descubre el mundo de la Realidad Aumentada educativa. Presiona el botón para comenzar tu aventura.</p>
-                                <button class="w-4/5 bg-green-500 text-white font-bold py-3 px-8 rounded-full hover:bg-green-600 transition duration-300 shadow-md flex items-center justify-center">
-                                    <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
-                                    Iniciar Experiencia AR
-                                </button>
-                            </div>
-                        </div>
+                        <p id="generation-status" class="text-sm text-gray-500 mt-2 min-h-[20px]"></p>
                     </div>
                 </div>
             </div>
-             <div class="mt-8 flex justify-center">
+
+            <!-- Vista para mostrar el código generado -->
+            <div id="publish-result-view" class="hidden">
+                 <h2 class="text-2xl font-semibold mb-4 border-b pb-2">¡Tu Página está Lista!</h2>
+                 <div class="bg-blue-50 border-l-4 border-blue-500 text-blue-700 p-4 mb-6" role="alert">
+                    <p class="font-bold">Instrucciones</p>
+                    <ol class="list-decimal list-inside mt-2">
+                        <li>Copia todo el código de la caja de abajo.</li>
+                        <li>Pega el código en un nuevo archivo y guárdalo con el nombre `index.html`.</li>
+                        <li>Sube este archivo `index.html` a un repositorio de GitHub.</li>
+                        <li>Activa GitHub Pages en la configuración de tu repositorio. ¡Y listo!</li>
+                    </ol>
+                </div>
+
+                <div class="relative">
+                    <button id="copy-code-btn" class="absolute top-2 right-2 bg-indigo-600 text-white font-bold py-1 px-3 rounded-lg hover:bg-indigo-700 transition duration-300 text-sm">Copiar Código</button>
+                    <pre><code id="generated-code"></code></pre>
+                </div>
+            </div>
+
+            <div class="mt-8 flex justify-center">
                 <button id="back-to-ar-btn" class="bg-gray-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-gray-600 transition duration-300">Atrás</button>
             </div>
         </div>
@@ -722,7 +690,7 @@
         document.getElementById('back-to-editor-btn-pre').addEventListener('click', () => navigateTo('page-editor'));
         document.getElementById('start-ar-btn').addEventListener('click', () => startAR());
         document.getElementById('stop-ar-btn').addEventListener('click', () => stopAR());
-        document.getElementById('goto-apk-btn-active').addEventListener('click', () => navigateTo('page-apk'));
+        document.getElementById('goto-publish-btn-active').addEventListener('click', () => navigateTo('page-publish'));
         document.getElementById('back-to-ar-btn').addEventListener('click', () => navigateTo('page-ar'));
 
         // Editor logic
@@ -781,93 +749,101 @@
             }
         });
         
-        // --- APK GENERATION PAGE LOGIC ---
-        const apkNameInput = document.getElementById('apk-name');
-        const apkIconInput = document.getElementById('apk-icon');
-        const generateBtn = document.getElementById('generate-files-btn');
-        const generationStatus = document.getElementById('generation-status');
+        // --- PUBLISH PAGE LOGIC ---
         
-        const apkIconPreview = document.getElementById('apk-icon-preview');
-        const apkTitlePreview = document.getElementById('apk-title-preview');
-        const apkSubtitlePreview = document.getElementById('apk-subtitle-preview');
+        const publishIconInput = document.getElementById('publish-icon');
+        const publishIconPreview = document.getElementById('publish-icon-preview');
 
-        const apkWelcomeTitleInput = document.getElementById('apk-welcome-title');
-        const apkWelcomeSubtitleInput = document.getElementById('apk-welcome-subtitle');
-
-        apkNameInput.addEventListener('input', (e) => {
-            const name = e.target.value || 'Nombre App';
-        });
-
-        apkIconInput.addEventListener('change', (e) => {
+        publishIconInput.addEventListener('change', (e) => {
             const file = e.target.files[0];
             if (file) {
                 const reader = new FileReader();
                 reader.onload = (event) => {
-                    apkIconPreview.src = event.target.result;
+                    publishIconPreview.src = event.target.result;
                 }
                 reader.readAsDataURL(file);
             }
         });
-        
-        apkWelcomeTitleInput.addEventListener('input', (e) => { apkTitlePreview.textContent = e.target.value; });
-        apkWelcomeSubtitleInput.addEventListener('input', (e) => { apkSubtitlePreview.textContent = e.target.value; });
-        apkTitlePreview.addEventListener('input', (e) => { apkWelcomeTitleInput.value = e.target.textContent; });
-        apkSubtitlePreview.addEventListener('input', (e) => { apkWelcomeSubtitleInput.value = e.target.textContent; });
 
+        // Helper to read file as Data URL (Base64)
+        function readFileAsDataURL(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            });
+        }
 
-        generateBtn.addEventListener('click', async () => {
-            const appName = apkNameInput.value.trim();
-            const appIconFile = apkIconInput.files[0];
-            const welcomeTitle = apkWelcomeTitleInput.value.trim();
-            const welcomeSubtitle = apkWelcomeSubtitleInput.value.trim();
+        document.getElementById('generate-page-btn').addEventListener('click', async () => {
+            const pageName = document.getElementById('publish-name').value.trim();
+            const pageIconFile = document.getElementById('publish-icon').files[0];
+            const welcomeTitle = document.getElementById('publish-welcome-title').value.trim();
+            const welcomeSubtitle = document.getElementById('publish-welcome-subtitle').value.trim();
+            const generationStatus = document.getElementById('generation-status');
 
-            if (!appName || !appIconFile || !welcomeTitle) {
-                alert("Please fill out the App Name, Icon, and Welcome Title.");
+            if (!pageName || !pageIconFile || !welcomeTitle) {
+                alert("Por favor, completa el Título, Ícono y Título de Bienvenida.");
                 return;
             }
             if (state.assets.length === 0) {
-                alert("No AR assets have been loaded in Step 1.");
+                alert("No se han cargado recursos AR en el Paso 1.");
                 return;
             }
 
-            generationStatus.textContent = "Generating files, please wait...";
+            generationStatus.textContent = "Generando código... convirtiendo archivos...";
             
             try {
-                const zip = new JSZip();
-                const finalHtml = createFinalHtml(appName, welcomeTitle, welcomeSubtitle);
-                zip.file("index.html", finalHtml);
-                
-                const iconBlob = await appIconFile.slice(0, appIconFile.size, appIconFile.type);
-                zip.file("icon.png", iconBlob);
+                // Convert all files to Data URLs
+                const iconDataUrl = await readFileAsDataURL(pageIconFile);
 
-                const markersFolder = zip.folder("markers");
-                const modelsFolder = zip.folder("models");
-                for (const asset of state.assets) {
-                    markersFolder.file(asset.markerFile.name, asset.markerFile);
-                    modelsFolder.file(asset.modelFile.name, asset.modelFile);
-                }
+                const markerDataUrls = await Promise.all(
+                    state.assets.map(asset => readFileAsDataURL(asset.markerFile))
+                );
 
-                const content = await zip.generateAsync({ type: "blob" });
-                const link = document.createElement("a");
-                link.href = URL.createObjectURL(content);
-                link.download = `${appName.replace(/\s/g, '_')}_AR_Project.zip`;
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-                
-                generationStatus.textContent = "Files generated and downloaded successfully!";
+                const modelDataUrls = await Promise.all(
+                    state.assets.map(asset => readFileAsDataURL(asset.modelFile))
+                );
+
+                // Create the final HTML with embedded data
+                const finalHtml = createFinalHtml(
+                    pageName, 
+                    welcomeTitle, 
+                    welcomeSubtitle, 
+                    iconDataUrl,
+                    markerDataUrls,
+                    modelDataUrls
+                );
+
+                // Display the result
+                document.getElementById('generated-code').textContent = finalHtml;
+                document.getElementById('publish-config-view').classList.add('hidden');
+                document.getElementById('publish-result-view').classList.remove('hidden');
+                generationStatus.textContent = "";
+
             } catch (error) {
-                console.error("Error generating ZIP:", error);
-                generationStatus.textContent = "An error occurred while generating files.";
+                console.error("Error generating page:", error);
+                generationStatus.textContent = "Ocurrió un error al generar la página.";
             }
         });
+        
+        document.getElementById('copy-code-btn').addEventListener('click', (e) => {
+            const code = document.getElementById('generated-code').textContent;
+            navigator.clipboard.writeText(code).then(() => {
+                e.target.textContent = "¡Copiado!";
+                setTimeout(() => { e.target.textContent = "Copiar Código"; }, 2000);
+            }, (err) => {
+                alert('Error al copiar el código: ' + err);
+            });
+        });
 
-        function createFinalHtml(appName, welcomeTitle, welcomeSubtitle) {
-            const markerSrcs = state.assets.map(a => `./markers/${a.markerFile.name}`).join(';');
+
+        function createFinalHtml(pageName, welcomeTitle, welcomeSubtitle, iconDataUrl, markerDataUrls, modelDataUrls) {
+            const markerSrcs = markerDataUrls.join(';');
             
-            const assetItems = state.assets.map(asset => 
-                `<a-asset-item id="model-${asset.id}" src="./models/${asset.modelFile.name}"></a-asset-item>`
-            ).join('');
+            const assetItems = state.assets.map((asset, index) => 
+                `<a-asset-item id="model-${asset.id}" src="${modelDataUrls[index]}"></a-asset-item>`
+            ).join('\n            ');
 
             const entities = state.assets.map((asset, index) => {
                 const t = asset.transform;
@@ -881,26 +857,20 @@
                     scale="${finalScale} ${finalScale} ${finalScale}">
                 </a-gltf-model>
             </a-entity>`;
-            }).join('');
+            }).join('\n            ');
 
-            // --- CORRECCIÓN CRÍTICA ---
-            // El script ahora espera a que la escena de A-Frame esté completamente cargada ('loaded')
-            // antes de añadir el evento 'click' al botón. Esto previene el error 'cannot read property start of undefined'.
             const correctedScript = `
         document.addEventListener('DOMContentLoaded', () => {
             const sceneEl = document.querySelector('a-scene');
             const welcomeScreen = document.getElementById('welcome-screen');
             const startButton = document.getElementById('start-ar-button');
 
-            // Espera a que la escena de A-Frame esté completamente cargada
             sceneEl.addEventListener('loaded', () => {
                 const mindarSystem = sceneEl.systems['mindar-image'];
                 
-                // Ahora es seguro añadir el listener al botón
                 startButton.addEventListener('click', () => {
-                    // El sistema mindarSystem está garantizado que existe aquí
                     mindarSystem.start();
-                    welcomeScreen.classList.add('hidden');
+                    welcomeScreen.style.display = 'none';
                 });
             });
         });`;
@@ -911,7 +881,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>${appName}</title>
+    <title>${pageName}</title>
     <script src="https://aframe.io/releases/1.5.0/aframe.min.js"><\/script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"><\/script>
     <style>
@@ -920,27 +890,25 @@
             position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1000;
             display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white; padding: 20px; box-sizing: border-box; transition: opacity 0.5s ease-out;
+            color: white; padding: 20px; box-sizing: border-box;
         }
-        #welcome-screen.hidden { opacity: 0; pointer-events: none; }
         #welcome-screen img { width: 150px; height: 150px; object-fit: cover; border-radius: 25px; margin-bottom: 24px; box-shadow: 0 10px 20px rgba(0,0,0,0.2); }
         #welcome-screen h1 { font-size: 1.8em; margin: 0 0 8px 0; }
         #welcome-screen p { font-size: 1em; max-width: 300px; margin: 0 auto 32px auto; opacity: 0.9; }
         #start-ar-button { background: #4CAF50; color: white; border: none; padding: 15px 40px; font-size: 1.2em; border-radius: 50px; cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.2); font-weight: bold; }
-        a-scene { z-index: -1; } /* Modificado para asegurar que no bloquee la pantalla de bienvenida */
-        #welcome-screen.hidden + a-scene { z-index: auto; } /* Restaurar z-index cuando está activo */
-
     </style>
 </head>
 <body>
     <div id="welcome-screen">
-        <img src="./icon.png" alt="Ícono de la App">
+        <img src="${iconDataUrl}" alt="Ícono de la App">
         <h1>${welcomeTitle}</h1>
         <p>${welcomeSubtitle}</p>
         <button id="start-ar-button">Iniciar Experiencia AR</button>
     </div>
     <a-scene mindar-image="imageTargetSrc: ${markerSrcs}; autoStart: false;" color-space="sRGB" renderer="colorManagement: true, physicallyCorrectLights" vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false">
-        <a-assets>${assetItems}<\/a-assets>
+        <a-assets>
+            ${assetItems}
+        <\/a-assets>
         <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
         ${entities}
     </a-scene>
