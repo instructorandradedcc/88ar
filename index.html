@@ -12,16 +12,11 @@
     <!-- MindAR para A-Frame -->
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
     
-    <!-- Three.js via Import Maps para el editor 3D -->
-    <script type="importmap">
-        {
-            "imports": {
-                "three": "https://cdn.jsdelivr.net/npm/three@0.158.0/build/three.module.js",
-                "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.158.0/examples/jsm/"
-            }
-        }
-    </script>
-    
+    <!-- Addons de Three.js para el editor 3D, compatibles con la versión de A-Frame -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.158.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.158.0/examples/js/loaders/GLTFLoader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.158.0/examples/js/controls/DragControls.js"></script>
+
     <style>
         .page { display: none; }
         .page.active { display: block; }
@@ -243,14 +238,10 @@
 
     </div>
     
-    <script type="module">
-    import * as THREE from 'three';
-    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-    import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-    import { DragControls } from 'three/addons/controls/DragControls.js';
-
+    <script>
     document.addEventListener('DOMContentLoaded', () => {
         // --- ESTADO Y VARIABLES GLOBALES ---
+        const THREE = window.THREE; // Usar el objeto THREE global de A-Frame
         const state = {
             assets: [],
             currentPage: 'page-upload',
@@ -260,7 +251,7 @@
 
         let editor = {
             scene: null, camera: null, renderer: null, controls: null, dragControls: null,
-            loader: new GLTFLoader(),
+            loader: new THREE.GLTFLoader(),
             textureLoader: new THREE.TextureLoader(),
             currentTarget: null,
             currentPlane: null,
@@ -306,7 +297,7 @@
             editor.renderer.setSize(container.clientWidth, container.clientHeight);
             editor.renderer.setPixelRatio(window.devicePixelRatio);
 
-            editor.controls = new OrbitControls(editor.camera, editor.renderer.domElement);
+            editor.controls = new THREE.OrbitControls(editor.camera, editor.renderer.domElement);
             editor.controls.enableDamping = true;
 
             function animate() { 
@@ -398,7 +389,7 @@
 
         function setupDragControls(object) {
             const assetSelector = document.getElementById('asset-selector');
-            editor.dragControls = new DragControls([object], editor.camera, editor.renderer.domElement);
+            editor.dragControls = new THREE.DragControls([object], editor.camera, editor.renderer.domElement);
             editor.dragControls.addEventListener('dragstart', () => { if (!isRotating) editor.controls.enabled = false; });
             editor.dragControls.addEventListener('dragend', (event) => {
                 if (!isRotating) editor.controls.enabled = true;
@@ -920,3 +911,6 @@
     </script>
 </body>
 </html>
+
+
+
