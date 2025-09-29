@@ -3,20 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Creador de Experiencias AR para GitHub</title>
-    <!-- Tailwind CSS para el diseño -->
+    <title>Creador de Experiencias AR</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- A-Frame (incluye Three.js r158) -->
     <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
     
-    <!-- MindAR para A-Frame -->
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
-    
-    <!-- Addons de Three.js para el editor 3D, compatibles con la versión de A-Frame -->
-    <script src="https://cdn.jsdelivr.net/npm/three@0.158.0/examples/js/controls/OrbitControls.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.158.0/examples/js/loaders/GLTFLoader.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.158.0/examples/js/controls/DragControls.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://cdn.jsdelivr.net/npm/three@0.158.0/build/three.module.js",
+                "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.158.0/examples/jsm/"
+            }
+        }
+    </script>
+    
     <style>
         .page { display: none; }
         .page.active { display: block; }
@@ -44,33 +46,20 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
-        #generated-code {
-            background-color: #1e293b;
-            color: #e2e8f0;
-            border-radius: 8px;
-            padding: 1rem;
-            max-height: 400px;
-            overflow-y: auto;
-            white-space: pre-wrap;
-            word-wrap: break-word;
-            font-family: 'Courier New', Courier, monospace;
-        }
     </style>
 </head>
 <body class="bg-gray-200 text-gray-800 font-sans">
 
     <div id="app" class="container mx-auto p-6 md:p-8 max-w-5xl bg-white rounded-xl shadow-lg my-8 overflow-y-auto" style="max-height: 85vh;">
-        <!-- ENCABEZADO CON LOGO -->
         <div class="flex justify-center items-center mb-6">
-             <img src="https://placehold.co/80x80/e2e8f0/94a3b8?text=Logo" alt="Logo Fundación" class="h-20 mr-4" onerror="this.onerror=null;this.src='https://placehold.co/80x80/e2e8f0/94a3b8?text=Logo';">
+             <img src="logofundacion.jpg" alt="Logo Fundación" class="h-20 mr-4" onerror="this.onerror=null;this.src='https://placehold.co/80x80/e2e8f0/94a3b8?text=Logo';">
             <div>
-                <h1 class="text-3xl font-bold text-center text-indigo-600">Creador de Experiencias AR para GitHub</h1>
-                <p class="text-center text-gray-500">Transforma tus recursos en una página web de RA autocontenida.</p>
+                <h1 class="text-3xl font-bold text-center text-indigo-600">Creador de Experiencias AR</h1>
+                <p class="text-center text-gray-500">Un nuevo flujo de trabajo para usar tus propias imágenes coloridas.</p>
             </div>
         </div>
 
 
-        <!-- PÁGINA 1: Compilar Marcadores -->
         <div id="page-upload" class="page active bg-white p-6 rounded-lg shadow-md">
             <h2 class="text-2xl font-semibold mb-4 border-b pb-2">Paso 1: Preparar tus Recursos</h2>
             <div class="bg-indigo-50 border-l-4 border-indigo-500 text-indigo-700 p-4 mb-6" role="alert">
@@ -115,7 +104,6 @@
             </div>
         </div>
 
-        <!-- PÁGINA 2: Editor 3D -->
         <div id="page-editor" class="page bg-white p-6 rounded-lg shadow-md">
              <h2 class="text-2xl font-semibold mb-4 border-b pb-2">Paso 2: Ajustar Modelos 3D</h2>
             <div class="flex flex-col md:flex-row gap-6">
@@ -150,7 +138,6 @@
             </div>
         </div>
 
-        <!-- PÁGINA 3: Cámara AR -->
         <div id="page-ar" class="page">
              <div class="relative">
                 <div id="ar-ui-container" class="relative z-10">
@@ -168,67 +155,58 @@
                         <button id="start-ar-btn" class="bg-green-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-600 transition duration-300">Activar Cámara AR</button>
                     </div>
                 </div>
-                <!-- Container for AR Scene and preloaded assets -->
                 <div id="ar-preload-container" class="hidden"></div>
                 <div id="ar-scene-container"></div>
                 <div id="ar-active-controls" class="hidden p-4 bg-black bg-opacity-50">
                     <div class="flex justify-between items-center max-w-4xl mx-auto">
                         <button id="stop-ar-btn" class="bg-red-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-red-600 transition duration-300">Detener Cámara</button>
-                        <button id="goto-publish-btn-active" class="bg-teal-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-teal-600 transition duration-300">Siguiente: Publicar Página</button>
+                        <button id="goto-apk-btn-active" class="bg-teal-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-teal-600 transition duration-300">Siguiente: Crear App</button>
                     </div>
                 </div>
             </div>
         </div>
         
-        <!-- PÁGINA 4: Publicar Página -->
-        <div id="page-publish" class="page bg-white p-6 rounded-lg shadow-md">
-            <div id="publish-config-view">
-                <h2 class="text-2xl font-semibold mb-4 border-b pb-2">Paso 4: Configurar y Generar tu Página Web</h2>
+        <div id="page-apk" class="page bg-white p-6 rounded-lg shadow-md">
+            <h2 class="text-2xl font-semibold mb-4 border-b pb-2">Paso 4: Generar HTML Autocontenido</h2>
+            
+            <div class="bg-blue-50 border-l-4 border-blue-500 text-blue-700 p-4 mb-6" role="alert">
+                <p class="font-bold">Nuevo Flujo de Trabajo</p>
+                <p>Este paso ahora genera un único archivo HTML con todos los recursos (modelos, marcadores, ícono) incrustados. Simplemente copia el código generado y guárdalo como `index.html` para subirlo a tu hosting (como GitHub Pages).</p>
+            </div>
+
+            <div class="flex-1">
+                <h3 class="text-lg font-semibold mb-4">Detalles de la Aplicación</h3>
                 <div>
-                    <h3 class="text-lg font-semibold mb-4">Detalles de la Página</h3>
-                    <div>
-                        <label for="publish-name" class="block mb-2 font-medium text-gray-700">Título de la Página (tag `<title>`):</label>
-                        <input type="text" id="publish-name" placeholder="Ej: Mi Libro Mágico AR" class="w-full p-2 border rounded">
-                    </div>
-                    <div class="mt-4">
-                        <label for="publish-icon" class="block mb-2 font-medium text-gray-700">Ícono de Bienvenida (Portada del libro):</label>
-                        <input type="file" id="publish-icon" accept="image/png, image/jpeg" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"/>
-                        <img id="publish-icon-preview" src="https://placehold.co/100x100/e2e8f0/94a3b8?text=Icono" class="mt-2 rounded-lg shadow-md w-24 h-24 object-cover"/>
-                    </div>
-                    <div class="mt-4">
-                        <label for="publish-welcome-title" class="block mb-2 font-medium text-gray-700">Título de Bienvenida:</label>
-                        <input type="text" id="publish-welcome-title" value="¡Bienvenido a la Experiencia AR!" class="w-full p-2 border rounded">
-                    </div>
-                    <div class="mt-4">
-                        <label for="publish-welcome-subtitle" class="block mb-2 font-medium text-gray-700">Subtítulo/Descripción:</label>
-                        <textarea id="publish-welcome-subtitle" rows="3" class="w-full p-2 border rounded">Descubre el mundo de la Realidad Aumentada educativa. Presiona el botón para comenzar tu aventura.</textarea>
-                    </div>
-                     <div class="mt-8 text-center">
-                        <button id="generate-page-btn" class="bg-green-500 text-white font-bold py-3 px-6 rounded-lg hover:bg-green-600 text-lg transition-transform transform hover:scale-105 shadow-lg">
-                            Generar Página para GitHub
-                        </button>
-                        <p id="generation-status" class="text-sm text-gray-500 mt-2 min-h-[20px]"></p>
-                    </div>
+                    <label for="apk-name" class="block mb-2 font-medium text-gray-700">Título de la página HTML:</label>
+                    <input type="text" id="apk-name" placeholder="Ej: Mi Libro Mágico" class="w-full p-2 border rounded">
+                </div>
+                <div class="mt-4">
+                    <label for="apk-icon" class="block mb-2 font-medium text-gray-700">Ícono para la pantalla de bienvenida:</label>
+                    <input type="file" id="apk-icon" accept="image/png, image/jpeg" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"/>
+                </div>
+                <div class="mt-4">
+                    <label for="apk-welcome-title" class="block mb-2 font-medium text-gray-700">Título de Bienvenida:</label>
+                    <input type="text" id="apk-welcome-title" value="¡Bienvenido a la Experiencia AR!" class="w-full p-2 border rounded">
+                </div>
+                <div class="mt-4">
+                    <label for="apk-welcome-subtitle" class="block mb-2 font-medium text-gray-700">Subtítulo/Descripción:</label>
+                    <textarea id="apk-welcome-subtitle" rows="3" class="w-full p-2 border rounded">Descubre el mundo de la Realidad Aumentada educativa. Presiona el botón para comenzar tu aventura.</textarea>
+                </div>
+
+                 <div class="mt-8 text-center">
+                    <button id="generate-html-btn" class="bg-green-500 text-white font-bold py-3 px-6 rounded-lg hover:bg-green-600 text-lg transition-transform transform hover:scale-105 shadow-lg">
+                        Generar Código HTML
+                    </button>
+                    <p id="generation-status" class="text-sm text-gray-500 mt-2 min-h-[20px]"></p>
                 </div>
             </div>
 
-            <!-- Vista para mostrar el código generado -->
-            <div id="publish-result-view" class="hidden">
-                 <h2 class="text-2xl font-semibold mb-4 border-b pb-2">¡Tu Página está Lista!</h2>
-                 <div class="bg-blue-50 border-l-4 border-blue-500 text-blue-700 p-4 mb-6" role="alert">
-                    <p class="font-bold">Instrucciones</p>
-                    <ol class="list-decimal list-inside mt-2">
-                        <li>Copia todo el código de la caja de abajo.</li>
-                        <li>Pega el código en un nuevo archivo y guárdalo con el nombre `index.html`.</li>
-                        <li>Sube este archivo `index.html` a un repositorio de GitHub.</li>
-                        <li>Activa GitHub Pages en la configuración de tu repositorio. ¡Y listo!</li>
-                    </ol>
+            <div id="html-result-container" class="hidden mt-8">
+                <div class="flex justify-between items-center mb-2">
+                    <label for="html-output" class="block font-medium text-gray-700">Código HTML Generado:</label>
+                    <button id="copy-html-btn" class="bg-gray-600 text-white font-bold py-1 px-3 rounded-lg hover:bg-gray-700 transition duration-300 text-sm">Copiar al Portapapeles</button>
                 </div>
-
-                <div class="relative">
-                    <button id="copy-code-btn" class="absolute top-2 right-2 bg-indigo-600 text-white font-bold py-1 px-3 rounded-lg hover:bg-indigo-700 transition duration-300 text-sm">Copiar Código</button>
-                    <pre><code id="generated-code"></code></pre>
-                </div>
+                <textarea id="html-output" rows="15" class="w-full p-2 border rounded bg-gray-900 text-green-300 font-mono text-xs" readonly></textarea>
             </div>
 
             <div class="mt-8 flex justify-center">
@@ -238,10 +216,14 @@
 
     </div>
     
-    <script>
+    <script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+    import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+    import { DragControls } from 'three/addons/controls/DragControls.js';
+
     document.addEventListener('DOMContentLoaded', () => {
         // --- ESTADO Y VARIABLES GLOBALES ---
-        const THREE = window.THREE; // Usar el objeto THREE global de A-Frame
         const state = {
             assets: [],
             currentPage: 'page-upload',
@@ -251,7 +233,7 @@
 
         let editor = {
             scene: null, camera: null, renderer: null, controls: null, dragControls: null,
-            loader: new THREE.GLTFLoader(),
+            loader: new GLTFLoader(),
             textureLoader: new THREE.TextureLoader(),
             currentTarget: null,
             currentPlane: null,
@@ -297,7 +279,7 @@
             editor.renderer.setSize(container.clientWidth, container.clientHeight);
             editor.renderer.setPixelRatio(window.devicePixelRatio);
 
-            editor.controls = new THREE.OrbitControls(editor.camera, editor.renderer.domElement);
+            editor.controls = new OrbitControls(editor.camera, editor.renderer.domElement);
             editor.controls.enableDamping = true;
 
             function animate() { 
@@ -389,528 +371,9 @@
 
         function setupDragControls(object) {
             const assetSelector = document.getElementById('asset-selector');
-            editor.dragControls = new THREE.DragControls([object], editor.camera, editor.renderer.domElement);
+            editor.dragControls = new DragControls([object], editor.camera, editor.renderer.domElement);
             editor.dragControls.addEventListener('dragstart', () => { if (!isRotating) editor.controls.enabled = false; });
-            editor.dragControls.addEventListener('dragend', (event) => {
-                if (!isRotating) editor.controls.enabled = true;
-                const assetId = parseInt(assetSelector.value);
-                const asset = state.assets.find(a => a.id === assetId);
-                if (asset) {
-                    const newPos = event.object.position;
-                    asset.transform.position.x = newPos.x;
-                    asset.transform.position.y = newPos.y;
-                    asset.transform.position.z = newPos.z;
-                    updateTransformInputs(asset.transform);
-                }
-            });
-        }
-        
-        function preloadARAssets() {
-            if (state.areAssetsPreloaded || state.assets.length === 0) {
-                return;
-            }
-            console.log("Preloading AR assets...");
-            const arPreloadContainer = document.getElementById('ar-preload-container');
-            arPreloadContainer.innerHTML = ''; 
-
-            const tempScene = document.createElement('a-scene');
-            tempScene.setAttribute('embedded', '');
-            tempScene.style.position = 'fixed';
-            tempScene.style.height = '1px';
-            tempScene.style.width = '1px';
-            tempScene.style.top = '-9999px';
-            tempScene.style.left = '-9999px';
-            
-            const assetsEl = document.createElement('a-assets');
-            assetsEl.setAttribute('timeout', '30000');
-
-            state.assets.forEach(asset => {
-                const assetItem = document.createElement('a-asset-item');
-                assetItem.id = `model-${asset.id}`;
-                assetItem.setAttribute('src', asset.modelDataUrl);
-                assetItem.setAttribute('response-type', 'arraybuffer');
-                assetsEl.appendChild(assetItem);
-            });
-            
-            const arStatusText = document.getElementById('ar-status-text');
-            const arLoader = document.querySelector('#ar-status .loader');
-
-            arStatusText.textContent = 'Cargando modelos 3D...';
-            arLoader.classList.remove('hidden');
-
-            assetsEl.addEventListener('loaded', () => {
-                console.log('All assets preloaded successfully!');
-                state.areAssetsPreloaded = true;
-                arStatusText.textContent = '¡Recursos listos! Activa la cámara.';
-                arLoader.classList.add('hidden');
-            });
-             assetsEl.addEventListener('timeout', (e) => {
-                console.error('Asset loading timed out:', e.detail.src);
-                arStatusText.textContent = 'Error: La carga de modelos tardó mucho.';
-                 arLoader.classList.add('hidden');
-            });
-
-            tempScene.appendChild(assetsEl);
-            arPreloadContainer.appendChild(tempScene);
-        }
-
-        function startAR() {
-            if (!state.areAssetsPreloaded) {
-                alert("Los modelos 3D aún se están cargando. Por favor espera un momento y vuelve a intentarlo.");
-                return;
-            }
-
-            const arSceneContainer = document.getElementById('ar-scene-container');
-            arSceneContainer.innerHTML = '';
-            const mindARSettings = `imageTargetSrc: ${state.assets.map(a => a.markerDataUrl).join(';')}; autoStart: true; uiLoading: no; uiError: no; uiScanning: no;`;
-            
-            const sceneEl = document.createElement('a-scene');
-            sceneEl.setAttribute('mindar-image', mindARSettings);
-            sceneEl.setAttribute('color-space', 'sRGB');
-            sceneEl.setAttribute('renderer', 'colorManagement: true, physicallyCorrectLights');
-            sceneEl.setAttribute('vr-mode-ui', 'enabled: false');
-            sceneEl.setAttribute('device-orientation-permission-ui', 'enabled: false');
-            
-            const preloadedAssets = document.querySelector('#ar-preload-container a-assets');
-            if(preloadedAssets) {
-                sceneEl.appendChild(preloadedAssets); 
-            }
-            
-            const cameraEl = document.createElement('a-camera');
-            cameraEl.setAttribute('position', '0 0 0');
-            cameraEl.setAttribute('look-controls', 'enabled: false');
-            sceneEl.appendChild(cameraEl);
-
-            state.assets.forEach((asset, index) => {
-                const targetEl = document.createElement('a-entity');
-                targetEl.setAttribute('mindar-image-target', `targetIndex: ${index}`);
-                
-                const t = asset.transform;
-                const finalScale = asset.normalizationFactor * t.scale.x;
-
-                const loaderEntity = document.createElement('a-plane');
-                loaderEntity.id = `loader-${asset.id}`;
-                loaderEntity.setAttribute('position', '0 0.5 0');
-                loaderEntity.setAttribute('scale', '0.4 0.4 0.4');
-                loaderEntity.setAttribute('material', 'src: https://cdn.jsdelivr.net/gh/c-frame/aframe-extras@7.1.0/assets/loading.png; transparent: true;');
-                loaderEntity.setAttribute('animation', 'property: rotation; to: 0 360 0; loop: true; dur: 2000; easing: linear;');
-
-                const modelEntity = document.createElement('a-gltf-model');
-                modelEntity.id = `gltf-model-${asset.id}`;
-                modelEntity.setAttribute('src', `#model-${asset.id}`);
-                modelEntity.setAttribute('position', `${t.position.x} ${t.position.y} ${t.position.z}`);
-                modelEntity.setAttribute('rotation', `${t.rotation.x} ${t.rotation.y} ${t.rotation.z}`);
-                modelEntity.setAttribute('scale', `${finalScale} ${finalScale} ${finalScale}`);
-
-                targetEl.setAttribute('model-loader', `modelId: #gltf-model-${asset.id}; loaderId: #loader-${asset.id}`);
-                
-                targetEl.appendChild(loaderEntity);
-                targetEl.appendChild(modelEntity);
-                sceneEl.appendChild(targetEl);
-            });
-
-            arSceneContainer.appendChild(sceneEl);
-            arSceneContainer.classList.add('ar-active');
-            document.getElementById('ar-ui-container').classList.add('hidden');
-            document.getElementById('ar-active-controls').classList.remove('hidden');
-            state.isArActive = true;
-        }
-
-        function stopAR() {
-            const arSceneContainer = document.getElementById('ar-scene-container');
-            const sceneEl = arSceneContainer.querySelector('a-scene');
-            if (sceneEl && sceneEl.hasLoaded) {
-                 if (sceneEl.systems['mindar-image']) {
-                    sceneEl.systems['mindar-image'].stop();
-                }
-                sceneEl.parentNode.removeChild(sceneEl);
-            }
-            arSceneContainer.innerHTML = '';
-            
-            const arPreloadContainer = document.getElementById('ar-preload-container');
-            arPreloadContainer.innerHTML = '';
-            state.areAssetsPreloaded = false;
-
-            arSceneContainer.classList.remove('ar-active');
-            document.getElementById('ar-ui-container').classList.remove('hidden');
-            document.getElementById('ar-active-controls').classList.add('hidden');
-            state.isArActive = false;
-        }
-        
-        function navigateTo(pageId) {
-            document.querySelectorAll('.page').forEach(page => page.classList.remove('active'));
-            document.getElementById(pageId).classList.add('active');
-            state.currentPage = pageId;
-
-            if (pageId === 'page-editor' && !editor.renderer) initEditor();
-            
-            if (pageId === 'page-editor') {
-                populateEditorSelector();
-                if (state.assets.length > 0) {
-                     displayAssetInEditor(parseInt(document.getElementById('asset-selector').value) || state.assets[0].id);
-                }
-            }
-
-            if (pageId === 'page-ar') preloadARAssets();
-            
-            if (pageId !== 'page-ar' && state.isArActive) stopAR();
-        }
-
-        // --- INICIALIZACIÓN Y EVENT LISTENERS ---
-        
-        const markerUpload = document.getElementById('marker-upload');
-        const imageUpload = document.getElementById('image-upload');
-        const modelUpload = document.getElementById('model-upload');
-        const nextToEditorBtn = document.getElementById('goto-editor-btn');
-        const uploadStatus = document.getElementById('upload-status');
-        
-        let uploadedMarkers = [];
-        let uploadedImages = [];
-        let uploadedModels = [];
-
-        function updateFileList(containerId, files) {
-            const listContainer = document.getElementById(containerId);
-            listContainer.innerHTML = '';
-            const list = document.createElement('ul');
-            list.className = 'list-disc list-inside text-gray-700 space-y-1';
-            files.forEach(file => { 
-                const li = document.createElement('li'); 
-                li.textContent = file.name; 
-                list.appendChild(li); 
-            });
-            listContainer.appendChild(list);
-        }
-
-        function updateImagePreviews(containerId, files) {
-            const listContainer = document.getElementById(containerId);
-            listContainer.innerHTML = '';
-            const grid = document.createElement('div');
-            grid.className = 'grid grid-cols-2 sm:grid-cols-3 gap-2';
-
-            files.forEach(file => {
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    const previewWrapper = document.createElement('div');
-                    previewWrapper.className = 'relative aspect-square';
-                    
-                    const img = document.createElement('img');
-                    img.src = e.target.result;
-                    img.className = 'w-full h-full object-cover rounded-md shadow-sm';
-                    
-                    const name = document.createElement('span');
-                    name.textContent = file.name;
-                    name.className = 'absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white text-xs p-1 truncate';
-
-                    previewWrapper.appendChild(img);
-                    previewWrapper.appendChild(name);
-                    grid.appendChild(previewWrapper);
-                };
-                reader.readAsDataURL(file);
-            });
-            listContainer.appendChild(grid);
-        }
-        
-        function checkAndEnableNext() {
-            state.areAssetsPreloaded = false;
-            document.getElementById('ar-preload-container').innerHTML = '';
-
-            if (state.assets && state.assets.length > 0) {
-                state.assets.forEach(asset => {
-                    URL.revokeObjectURL(asset.markerDataUrl);
-                    URL.revokeObjectURL(asset.imageDataUrl);
-                    URL.revokeObjectURL(asset.modelDataUrl);
-                });
-            }
-            
-            const markerCount = uploadedMarkers.length;
-            const imageCount = uploadedImages.length;
-            const modelCount = uploadedModels.length;
-
-            if (markerCount === 0 && imageCount === 0 && modelCount === 0) {
-                uploadStatus.textContent = '';
-                nextToEditorBtn.disabled = true;
-                return;
-            }
-
-            if (markerCount > 0 && markerCount === imageCount && markerCount === modelCount) {
-                nextToEditorBtn.disabled = false;
-                uploadStatus.textContent = `¡Éxito! ${markerCount} set(s) de recursos listos.`;
-                uploadStatus.className = 'text-sm text-green-600 min-h-[20px]';
-
-                state.assets = uploadedMarkers.map((markerFile, index) => {
-                    const imageFile = uploadedImages[index];
-                    const modelFile = uploadedModels[index];
-                    return {
-                        id: index,
-                        markerFile: markerFile, markerDataUrl: URL.createObjectURL(markerFile), markerName: markerFile.name,
-                        imageFile: imageFile, imageDataUrl: URL.createObjectURL(imageFile), imageName: imageFile.name,
-                        modelFile: modelFile, modelDataUrl: URL.createObjectURL(modelFile), modelName: modelFile.name,
-                        transform: { position: { x: 0, y: 0, z: 0 }, rotation: { x: 0, y: 0, z: 0 }, scale: { x: 1, y: 1, z: 1 } },
-                        hasBeenNormalized: false,
-                        normalizationFactor: 1,
-                    };
-                });
-            } else {
-                nextToEditorBtn.disabled = true;
-                state.assets = [];
-                uploadStatus.textContent = 'Error: Las 3 categorías deben tener la misma cantidad de archivos.';
-                uploadStatus.className = 'text-sm text-red-600 min-h-[20px]';
-            }
-        }
-
-        markerUpload.addEventListener('change', (e) => {
-            uploadedMarkers = Array.from(e.target.files);
-            updateFileList('marker-list-container', uploadedMarkers);
-            checkAndEnableNext();
-        });
-        imageUpload.addEventListener('change', (e) => {
-            uploadedImages = Array.from(e.target.files);
-            updateImagePreviews('image-list-container', uploadedImages);
-            checkAndEnableNext();
-        });
-        modelUpload.addEventListener('change', (e) => {
-            uploadedModels = Array.from(e.target.files);
-            updateFileList('model-list-container', uploadedModels);
-            checkAndEnableNext();
-        });
-
-        // Navigation
-        document.getElementById('goto-editor-btn').addEventListener('click', () => navigateTo('page-editor'));
-        document.getElementById('goto-ar-btn').addEventListener('click', () => navigateTo('page-ar'));
-        document.getElementById('back-to-upload-btn').addEventListener('click', () => navigateTo('page-upload'));
-        document.getElementById('back-to-editor-btn-pre').addEventListener('click', () => navigateTo('page-editor'));
-        document.getElementById('start-ar-btn').addEventListener('click', () => startAR());
-        document.getElementById('stop-ar-btn').addEventListener('click', () => stopAR());
-        document.getElementById('goto-publish-btn-active').addEventListener('click', () => navigateTo('page-publish'));
-        document.getElementById('back-to-ar-btn').addEventListener('click', () => navigateTo('page-ar'));
-
-        // Editor logic
-        const assetSelector = document.getElementById('asset-selector');
-        assetSelector.addEventListener('change', (e) => displayAssetInEditor(parseInt(e.target.value)));
-        
-        const transformInputs = ['pos-x', 'pos-y', 'pos-z', 'rot-x', 'rot-y', 'rot-z', 'scale'];
-        transformInputs.forEach(id => {
-            document.getElementById(id).addEventListener('input', () => {
-                const assetId = parseInt(assetSelector.value);
-                const asset = state.assets.find(a => a.id === assetId);
-                if (!asset || !editor.currentTarget) return;
-                
-                asset.transform.position = { x: parseFloat(document.getElementById('pos-x').value), y: parseFloat(document.getElementById('pos-y').value), z: parseFloat(document.getElementById('pos-z').value) };
-                asset.transform.rotation = { x: parseFloat(document.getElementById('rot-x').value), y: parseFloat(document.getElementById('rot-y').value), z: parseFloat(document.getElementById('rot-z').value) };
-                const scaleVal = parseFloat(document.getElementById('scale').value);
-                asset.transform.scale = { x: scaleVal, y: scaleVal, z: scaleVal };
-                
-                updateModelTransformFromState(asset.transform);
-            });
-        });
-
-        const canvas = document.getElementById('editor-canvas');
-        canvas.addEventListener('contextmenu', e => e.preventDefault());
-        
-        let previousMousePosition = { x: 0, y: 0 };
-        canvas.addEventListener('mousedown', e => {
-            if (e.button === 2) { // Right click
-                isRotating = true;
-                editor.controls.enabled = false;
-                if (editor.dragControls) editor.dragControls.enabled = false;
-                previousMousePosition.x = e.clientX;
-            }
-        });
-        
-        canvas.addEventListener('mousemove', e => {
-            if (isRotating && editor.currentTarget) {
-                const deltaX = e.clientX - previousMousePosition.x;
-                const assetId = parseInt(assetSelector.value);
-                const asset = state.assets.find(a => a.id === assetId);
-                if (!asset) return;
-
-                asset.transform.rotation.y += deltaX * 0.5; 
-                updateModelTransformFromState(asset.transform);
-                document.getElementById('rot-y').value = Math.round(asset.transform.rotation.y % 360);
-                
-                previousMousePosition.x = e.clientX;
-            }
-        });
-
-        window.addEventListener('mouseup', e => {
-            if (e.button === 2) {
-                isRotating = false;
-                editor.controls.enabled = true;
-                if (editor.dragControls) editor.dragControls.enabled = true;
-            }
-        });
-        
-        // --- PUBLISH PAGE LOGIC ---
-        
-        const publishIconInput = document.getElementById('publish-icon');
-        const publishIconPreview = document.getElementById('publish-icon-preview');
-
-        publishIconInput.addEventListener('change', (e) => {
-            const file = e.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = (event) => {
-                    publishIconPreview.src = event.target.result;
-                }
-                reader.readAsDataURL(file);
-            }
-        });
-
-        // Helper to read file as Data URL (Base64)
-        function readFileAsDataURL(file) {
-            return new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.onload = () => resolve(reader.result);
-                reader.onerror = reject;
-                reader.readAsDataURL(file);
-            });
-        }
-
-        document.getElementById('generate-page-btn').addEventListener('click', async () => {
-            const pageName = document.getElementById('publish-name').value.trim();
-            const pageIconFile = document.getElementById('publish-icon').files[0];
-            const welcomeTitle = document.getElementById('publish-welcome-title').value.trim();
-            const welcomeSubtitle = document.getElementById('publish-welcome-subtitle').value.trim();
-            const generationStatus = document.getElementById('generation-status');
-
-            if (!pageName || !pageIconFile || !welcomeTitle) {
-                alert("Por favor, completa el Título, Ícono y Título de Bienvenida.");
-                return;
-            }
-            if (state.assets.length === 0) {
-                alert("No se han cargado recursos AR en el Paso 1.");
-                return;
-            }
-
-            generationStatus.textContent = "Generando código... convirtiendo archivos...";
-            
-            try {
-                // Convert all files to Data URLs
-                const iconDataUrl = await readFileAsDataURL(pageIconFile);
-
-                const markerDataUrls = await Promise.all(
-                    state.assets.map(asset => readFileAsDataURL(asset.markerFile))
-                );
-
-                const modelDataUrls = await Promise.all(
-                    state.assets.map(asset => readFileAsDataURL(asset.modelFile))
-                );
-
-                // Create the final HTML with embedded data
-                const finalHtml = createFinalHtml(
-                    pageName, 
-                    welcomeTitle, 
-                    welcomeSubtitle, 
-                    iconDataUrl,
-                    markerDataUrls,
-                    modelDataUrls
-                );
-
-                // Display the result
-                document.getElementById('generated-code').textContent = finalHtml;
-                document.getElementById('publish-config-view').classList.add('hidden');
-                document.getElementById('publish-result-view').classList.remove('hidden');
-                generationStatus.textContent = "";
-
-            } catch (error) {
-                console.error("Error generating page:", error);
-                generationStatus.textContent = "Ocurrió un error al generar la página.";
-            }
-        });
-        
-        document.getElementById('copy-code-btn').addEventListener('click', (e) => {
-            const code = document.getElementById('generated-code').textContent;
-            navigator.clipboard.writeText(code).then(() => {
-                e.target.textContent = "¡Copiado!";
-                setTimeout(() => { e.target.textContent = "Copiar Código"; }, 2000);
-            }, (err) => {
-                alert('Error al copiar el código: ' + err);
-            });
-        });
-
-
-        function createFinalHtml(pageName, welcomeTitle, welcomeSubtitle, iconDataUrl, markerDataUrls, modelDataUrls) {
-            const markerSrcs = markerDataUrls.join(';');
-            
-            const assetItems = state.assets.map((asset, index) => 
-                `<a-asset-item id="model-${asset.id}" src="${modelDataUrls[index]}"></a-asset-item>`
-            ).join('\n            ');
-
-            const entities = state.assets.map((asset, index) => {
-                const t = asset.transform;
-                const finalScale = asset.normalizationFactor * t.scale.x;
-                return `
-            <a-entity mindar-image-target="targetIndex: ${index}">
-                <a-gltf-model 
-                    src="#model-${asset.id}"
-                    position="${t.position.x} ${t.position.y} ${t.position.z}"
-                    rotation="${t.rotation.x} ${t.rotation.y} ${t.rotation.z}"
-                    scale="${finalScale} ${finalScale} ${finalScale}">
-                </a-gltf-model>
-            </a-entity>`;
-            }).join('\n            ');
-
-            const correctedScript = `
-        document.addEventListener('DOMContentLoaded', () => {
-            const sceneEl = document.querySelector('a-scene');
-            const welcomeScreen = document.getElementById('welcome-screen');
-            const startButton = document.getElementById('start-ar-button');
-
-            sceneEl.addEventListener('loaded', () => {
-                const mindarSystem = sceneEl.systems['mindar-image'];
-                
-                startButton.addEventListener('click', () => {
-                    mindarSystem.start();
-                    welcomeScreen.style.display = 'none';
-                });
-            });
-        });`;
-
-            return `
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>${pageName}</title>
-    <script src="https://aframe.io/releases/1.5.0/aframe.min.js"><\/script>
-    <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"><\/script>
-    <style>
-        body { margin: 0; font-family: sans-serif; }
-        #welcome-screen {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1000;
-            display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white; padding: 20px; box-sizing: border-box;
-        }
-        #welcome-screen img { width: 150px; height: 150px; object-fit: cover; border-radius: 25px; margin-bottom: 24px; box-shadow: 0 10px 20px rgba(0,0,0,0.2); }
-        #welcome-screen h1 { font-size: 1.8em; margin: 0 0 8px 0; }
-        #welcome-screen p { font-size: 1em; max-width: 300px; margin: 0 auto 32px auto; opacity: 0.9; }
-        #start-ar-button { background: #4CAF50; color: white; border: none; padding: 15px 40px; font-size: 1.2em; border-radius: 50px; cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.2); font-weight: bold; }
-    </style>
-</head>
-<body>
-    <div id="welcome-screen">
-        <img src="${iconDataUrl}" alt="Ícono de la App">
-        <h1>${welcomeTitle}</h1>
-        <p>${welcomeSubtitle}</p>
-        <button id="start-ar-button">Iniciar Experiencia AR</button>
-    </div>
-    <a-scene mindar-image="imageTargetSrc: ${markerSrcs}; autoStart: false;" color-space="sRGB" renderer="colorManagement: true, physicallyCorrectLights" vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false">
-        <a-assets>
-            ${assetItems}
-        <\/a-assets>
-        <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
-        ${entities}
-    </a-scene>
-    <script>${correctedScript}<\/script>
-</body>
-</html>`;
-        }
-    });
-    </script>
-</body>
-</html>
+            editor.dragControls.addEventListener
 
 
 
