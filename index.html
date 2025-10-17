@@ -276,7 +276,7 @@
     import { DragControls } from 'three/addons/controls/DragControls.js';
 
     document.addEventListener('DOMContentLoaded', () => {
-        const APP_VERSION = '1.3-Arch-AR-Zoom';
+        const APP_VERSION = '1.4-Arch-Fixes';
         const CACHE_NAME = 'local-ar-assets-cache-v1'; 
         const state = {
             assets: [],
@@ -362,48 +362,23 @@
                 maxScale: { default: 5.0 }
             },
             init: function () {
-                this.pinchStartDistance = 0;
-                this.initialScale = 1;
-                this.isVisible = false;
+                this.pinchStartDistance = 0; this.initialScale = 1; this.isVisible = false;
                 const canvas = this.el.sceneEl.canvas;
-
-                // Touch controls
                 const onTouchStart = (e) => {
-                    if (e.touches.length === 2 && this.isVisible) {
-                        e.preventDefault();
-                        this.pinchStartDistance = getDistance(e.touches[0], e.touches[1]);
-                        this.initialScale = this.el.object3D.scale.x;
-                    }
+                    if (e.touches.length === 2 && this.isVisible) { e.preventDefault(); this.pinchStartDistance = getDistance(e.touches[0], e.touches[1]); this.initialScale = this.el.object3D.scale.x; }
                 };
                 const onTouchMove = (e) => {
-                    if (e.touches.length === 2 && this.isVisible) {
-                        e.preventDefault();
-                        const currentDistance = getDistance(e.touches[0], e.touches[1]);
-                        const scaleFactor = currentDistance / this.pinchStartDistance;
-                        let newScale = this.initialScale * scaleFactor;
-                        newScale = Math.max(this.data.minScale, Math.min(this.data.maxScale, newScale)); // Clamp scale
-                        this.el.object3D.scale.set(newScale, newScale, newScale);
-                    }
+                    if (e.touches.length === 2 && this.isVisible) { e.preventDefault(); const currentDistance = getDistance(e.touches[0], e.touches[1]); const scaleFactor = currentDistance / this.pinchStartDistance; let newScale = this.initialScale * scaleFactor; newScale = Math.max(this.data.minScale, Math.min(this.data.maxScale, newScale)); this.el.object3D.scale.set(newScale, newScale, newScale); }
                 };                                
                 const onTouchEnd = () => { this.pinchStartDistance = 0; };
                 const getDistance = (t1, t2) => { const dx = t1.clientX - t2.clientX; const dy = t1.clientY - t2.clientY; return Math.sqrt(dx * dx + dy * dy); };
-
-                // Mouse Wheel controls
                 const onWheel = (e) => {
-                    if (!this.isVisible) return; 
-                    e.preventDefault();
-                    const currentScale = this.el.object3D.scale.x;
-                    const zoomFactor = e.deltaY > 0 ? -this.data.zoomSpeed : this.data.zoomSpeed;
-                    let newScale = currentScale + zoomFactor;
-                    newScale = Math.max(this.data.minScale, Math.min(this.data.maxScale, newScale)); // Clamp scale
-                    this.el.object3D.scale.set(newScale, newScale, newScale);
+                    if (!this.isVisible) return;  e.preventDefault(); const currentScale = this.el.object3D.scale.x; const zoomFactor = e.deltaY > 0 ? -this.data.zoomSpeed : this.data.zoomSpeed; let newScale = currentScale + zoomFactor; newScale = Math.max(this.data.minScale, Math.min(this.data.maxScale, newScale)); this.el.object3D.scale.set(newScale, newScale, newScale);
                 };
-
-                canvas.addEventListener('touchstart', onTouchStart);
-                canvas.addEventListener('touchmove', onTouchMove);
+                canvas.addEventListener('touchstart', onTouchStart, { passive: false });
+                canvas.addEventListener('touchmove', onTouchMove, { passive: false });
                 canvas.addEventListener('touchend', onTouchEnd);
                 canvas.addEventListener('wheel', onWheel, { passive: false });
-
                 this.el.parentEl.addEventListener('targetFound', () => { this.isVisible = true; });
                 this.el.parentEl.addEventListener('targetLost', () => { this.isVisible = false; });
             }
@@ -461,9 +436,7 @@
                 await cache.put('cached-marker.mind', new Response(mindFile));
                 await cache.put('cached-image.jpg', new Response(imageFile));
                 progressBar.style.width = `50%`;
-
                 await loadAssetsFromCacheOnStartup();
-                
                 progressBar.style.width = `100%`;
                 loadingText.textContent = '¡Archivos cargados y guardados en caché!';
                 setTimeout(() => { loadingStatusDiv.classList.add('hidden'); }, 1500);
@@ -508,7 +481,7 @@
             if (!canvas || !container || editor.renderer) return;
             editor.scene = new THREE.Scene();
             editor.scene.background = new THREE.Color(0xeeeeee);
-            editor.camera = new THREE.PerspectiveCamera(75, container.clientWidth / container.clientHeight, 0.1, 1000);
+            editor.camera = new THREE.PerspectiveCamera(75, container.clientWidth / container.clientHeight, 0.1, 10000); // <-- FIX: Increased far clipping plane
             editor.camera.position.set(0, 0.5, 3.5);
             editor.scene.add(new THREE.AmbientLight(0xffffff, 2));
             const directionalLight = new THREE.DirectionalLight(0xffffff, 3);
@@ -538,35 +511,24 @@
                 document.getElementById('scale').value = clampedScale.toFixed(2);
             };
             
-            // Mouse wheel zoom
             canvas.addEventListener('mousedown', () => { isMouseDown = true; });
             canvas.addEventListener('mouseup', () => { isMouseDown = false; });
             canvas.addEventListener('mouseleave', () => { isMouseDown = false; });
             canvas.addEventListener('wheel', (event) => {
-                if(isMouseDown) {
+                if(isMouseDown || !event.ctrlKey) { // Allow scroll zoom without click if ctrl is not pressed
                     event.preventDefault();
                     const zoomFactor = event.deltaY > 0 ? -0.1 : 0.1;
                     const currentScale = state.assets[0]?.transform.scale.x || 1;
                     updateScale(currentScale + zoomFactor);
                 }
-            });
+            }, { passive: false });
 
-            // Touch pinch zoom
             canvas.addEventListener('touchstart', (e) => {
-                if (e.touches.length === 2) {
-                    e.preventDefault();
-                    initialPinchDistance = getDistance(e.touches[0], e.touches[1]);
-                    initialScale = state.assets[0]?.transform.scale.x || 1;
-                }
-            });
+                if (e.touches.length === 2) { e.preventDefault(); initialPinchDistance = getDistance(e.touches[0], e.touches[1]); initialScale = state.assets[0]?.transform.scale.x || 1; }
+            }, { passive: false });
             canvas.addEventListener('touchmove', (e) => {
-                if (e.touches.length === 2) {
-                    e.preventDefault();
-                    const newDist = getDistance(e.touches[0], e.touches[1]);
-                    const scaleRatio = newDist / initialPinchDistance;
-                    updateScale(initialScale * scaleRatio);
-                }
-            });
+                if (e.touches.length === 2) { e.preventDefault(); const newDist = getDistance(e.touches[0], e.touches[1]); const scaleRatio = newDist / initialPinchDistance; updateScale(initialScale * scaleRatio); }
+            }, { passive: false });
             const getDistance = (t1, t2) => { const dx = t1.clientX - t2.clientX; const dy = t1.clientY - t2.clientY; return Math.sqrt(dx * dx + dy * dy); };
         }
 
@@ -602,23 +564,46 @@
                 }
             });
         }
+
+        async function ensureAssetIsNormalized(asset) {
+            if (asset.hasBeenNormalized) {
+                return;
+            }
+            try {
+                const gltf = await editor.loader.loadAsync(asset.modelDataUrl);
+                const box = new THREE.Box3().setFromObject(gltf.scene);
+                const size = new THREE.Vector3();
+                box.getSize(size);
+                const maxSize = Math.max(size.x, size.y, size.z);
+                if (maxSize > 0 && Number.isFinite(maxSize)) {
+                    asset.normalizationFactor = 1.0 / maxSize;
+                } else {
+                    asset.normalizationFactor = 1.0; // Fallback
+                }
+                asset.hasBeenNormalized = true;
+                console.log(`Asset "${asset.name}" normalized with factor: ${asset.normalizationFactor}`);
+            } catch (error) {
+                console.error("Error normalizing asset:", error);
+                asset.normalizationFactor = 1.0; // Fallback on error
+                asset.hasBeenNormalized = true; // Mark as done to avoid retries
+            }
+        }
+
         function displayAssetInEditor(assetId) {
             const asset = state.assets.find(a => a.id === assetId); if (!asset || !editor.scene) return;
-            if (editor.currentTarget) { editor.scene.remove(editor.currentTarget); if (editor.dragControls) editor.dragControls.dispose(); }
-            if (editor.currentPlane) editor.scene.remove(editor.currentPlane);
-            editor.textureLoader.load(asset.imageDataUrl, (texture) => {
-                const aspect = texture.image.width / texture.image.height;
-                const planeGeom = new THREE.PlaneGeometry(2, 2 / aspect);
-                editor.currentPlane = new THREE.Mesh(planeGeom, new THREE.MeshBasicMaterial({ map: texture, transparent: true, opacity: 0.9 }));
-                editor.currentPlane.position.set(0, 0, 0); editor.scene.add(editor.currentPlane);
-            });                        
-            editor.loader.load(asset.modelDataUrl, (gltf) => {
-                editor.currentTarget = gltf.scene; if (!asset.hasBeenNormalized) {
-                    const box = new THREE.Box3().setFromObject(gltf.scene); const size = new THREE.Vector3(); box.getSize(size);
-                    const maxSize = Math.max(size.x, size.y, size.z);
-                    asset.normalizationFactor = maxSize > 0 ? 1.0 / maxSize : 1.0; asset.hasBeenNormalized = true;
-                }
-                editor.scene.add(editor.currentTarget); updateModelTransformFromState(asset.transform); updateTransformInputs(asset.transform); setupDragControls();
+            ensureAssetIsNormalized(asset).then(() => {
+                if (editor.currentTarget) { editor.scene.remove(editor.currentTarget); if (editor.dragControls) editor.dragControls.dispose(); }
+                if (editor.currentPlane) editor.scene.remove(editor.currentPlane);
+                editor.textureLoader.load(asset.imageDataUrl, (texture) => {
+                    const aspect = texture.image.width / texture.image.height;
+                    const planeGeom = new THREE.PlaneGeometry(2, 2 / aspect);
+                    editor.currentPlane = new THREE.Mesh(planeGeom, new THREE.MeshBasicMaterial({ map: texture, transparent: true, opacity: 0.9 }));
+                    editor.currentPlane.position.set(0, 0, 0); editor.scene.add(editor.currentPlane);
+                });                        
+                editor.loader.load(asset.modelDataUrl, (gltf) => {
+                    editor.currentTarget = gltf.scene; 
+                    editor.scene.add(editor.currentTarget); updateModelTransformFromState(asset.transform); updateTransformInputs(asset.transform); setupDragControls();
+                });
             });
         }                
         function updateModelTransformFromState(transform) {
@@ -651,7 +636,9 @@
             if (!state.areAssetsPreloaded) { document.getElementById('ar-status-text').textContent = 'Error: Modelo 3D no listo.'; return; }
             document.getElementById('ar-preloader').classList.remove('hidden');
             const arSceneContainer = document.getElementById('ar-scene-container'); arSceneContainer.innerHTML = ''; 
-            const asset = state.assets[0]; const t = asset.transform; const finalScale = t.scale.x * asset.normalizationFactor;
+            const asset = state.assets[0]; const t = asset.transform; 
+            console.log("Setting up AR with scale:", t.scale.x, "and normalization factor:", asset.normalizationFactor);
+            const finalScale = t.scale.x * asset.normalizationFactor;
             const mindARSettings = `imageTargetSrc: ${asset.markerDataUrl}; maxTrackables: 1; autoStart: true; uiLoading: no; uiError: no; uiScanning: no; filterMinCF: 0.001; filterBeta: 10;`;
             const sceneHTML = `<a-scene id="ar-scene" embedded vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false" mindar-image="${mindARSettings}" color-space="sRGB" renderer="colorManagement: true, physicallyCorrectLights"> <a-assets><a-asset-item id="model-0" src="${asset.modelDataUrl}"></a-asset-item></a-assets> <a-camera position="0 0 0" look-controls="enabled: false" fov="75"></a-camera> <a-entity mindar-image-target="targetIndex: 0"> <a-gltf-model src="#model-0" position="${t.position.x} ${t.position.y} ${t.position.z}" rotation="${t.rotation.x} ${t.rotation.y} ${t.rotation.z}" scale="${finalScale} ${finalScale} ${finalScale}" ar-rotator ar-zoomer texture-from-video> </a-gltf-model> </a-entity> </a-scene>`;
             arSceneContainer.innerHTML = sceneHTML; const sceneEl = document.getElementById('ar-scene'); const scanningUI = document.getElementById('scanning-ui');
@@ -678,15 +665,19 @@
             if (!document.fullscreenElement) { document.documentElement.requestFullscreen().catch(err => console.error(`Fullscreen error: ${err.message}`));
             } else { document.exitFullscreen(); }
         }
-        function navigateTo(pageId) {
+        async function navigateTo(pageId) {
             if (state.isArActive) stopAR();
             document.querySelectorAll('.page').forEach(page => page.classList.remove('active'));
             document.getElementById(pageId)?.classList.add('active'); state.currentPage = pageId;
-            if (pageId === 'page-editor') {
+
+            if (pageId === 'page-editor' && state.assets.length > 0) {
                 if (!editor.renderer) initEditor();
-                populateEditorSelector(); if (state.assets.length > 0) displayAssetInEditor(state.assets[0].id);
-            } else if (pageId === 'page-ar') {
+                populateEditorSelector();
+                displayAssetInEditor(state.assets[0].id);
+            } else if (pageId === 'page-ar' && state.assets.length > 0) {
                 document.getElementById('start-ar-pc-btn').disabled = true; document.getElementById('start-ar-mobile-btn').disabled = true;
+                // FIX: Ensure model is normalized before preloading for AR
+                await ensureAssetIsNormalized(state.assets[0]);
                 preloadARAssets();
             }
         }
@@ -731,6 +722,7 @@
     </script>
 </body>
 </html>
+
 
 
 
