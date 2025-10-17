@@ -144,9 +144,13 @@
                 </div>
             </div>
 
-            <div class="mt-6 text-center">
-                <button id="load-from-upload-btn" class="bg-green-500 text-white font-bold py-3 px-6 rounded-lg hover:bg-green-600 transition duration-300 text-lg shadow-md">
+            <div class="mt-6 flex flex-col sm:flex-row justify-center items-center gap-4">
+                <button id="load-from-upload-btn" class="bg-green-500 text-white font-bold py-3 px-6 rounded-lg hover:bg-green-600 transition duration-300 text-lg shadow-md w-full sm:w-auto">
                     Cargar Archivos
+                </button>
+                <button id="clear-cache-btn" class="bg-red-500 text-white font-bold py-3 px-6 rounded-lg hover:bg-red-600 transition duration-300 text-lg shadow-md w-full sm:w-auto flex justify-center items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="inline-block mr-2"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
+                    Limpiar Caché
                 </button>
             </div>
 
@@ -266,7 +270,7 @@
     import { DragControls } from 'three/addons/controls/DragControls.js';
 
     document.addEventListener('DOMContentLoaded', () => {
-        const APP_VERSION = '1.0-Arch-Upload'; 
+        const APP_VERSION = '1.1-Arch-Fix'; 
         const state = {
             assets: [],
             currentPage: 'page-upload',
@@ -281,8 +285,107 @@
             currentPlane: null,
         };                        
         
-        // --- Components de AFRAME para interacción AR (Rotación, Zoom, Textura) ---
-        // (El código de los componentes se mantiene igual, es reutilizable)
+        // --- Components de AFRAME para interacción AR ---
+        AFRAME.registerComponent('texture-from-video', {
+            schema: {},
+            init: function () {
+                this.sceneEl = this.el.sceneEl; this.model = null; this.textureCanvas = null; this.textureContext = null; this.texture = null; this.video = null; this.tickCounter = 0;
+                
+                this.el.addEventListener('model-loaded', () => { 
+                    this.model = this.el.getObject3D('mesh'); 
+                    this.setupPaintLayer(); 
+                });
+                this.sceneEl.addEventListener('arReady', () => { 
+                    this.video = document.querySelector('video'); 
+                });
+            },
+
+            setupPaintLayer: function() {
+                if (!this.model) return;
+                
+                this.textureCanvas = document.createElement('canvas'); 
+                this.textureCanvas.width = 512; 
+                this.textureCanvas.height = 512;
+                this.textureContext = this.textureCanvas.getContext('2d');
+                this.texture = new THREE.CanvasTexture(this.textureCanvas);
+                this.texture.minFilter = THREE.LinearFilter; 
+                this.texture.magFilter = THREE.LinearFilter; 
+                this.texture.colorSpace = THREE.SRGBColorSpace;
+                
+                const processedMaterials = new Set();
+
+                this.model.traverse((node) => { 
+                    if (node.isMesh && node.material) {
+                        const materials = Array.isArray(node.material) ? node.material : [node.material];
+                        
+                        materials.forEach(material => {
+                            if (processedMaterials.has(material)) return;
+
+                            const newMaterial = material.clone();
+
+                            if (newMaterial.map) {
+                                console.log("[AR LOG] Modelo con textura detectado. Aplicando pintura como capa de luz (emissive).");
+                                newMaterial.emissiveMap = this.texture;
+                                newMaterial.emissive = new THREE.Color(0xFFFFFF);
+                                newMaterial.emissiveIntensity = 2.0;
+                            } else {
+                                console.log("[AR LOG] Modelo sin textura detectado. Poniendo base blanca y aplicando pintura.");
+                                newMaterial.color.set(0xFFFFFF);
+                                newMaterial.map = this.texture;
+                            }
+                            
+                            node.material = newMaterial;
+                            processedMaterials.add(newMaterial);
+                        });
+                    } 
+                });
+            },
+
+            tick: function() {
+                if (this.video && this.textureContext && this.el.parentEl.object3D.visible) {
+                    try {
+                        const markerObject = this.el.parentEl.object3D;
+                        const markerMatrix = markerObject.matrixWorld;
+                        const localCorners = [
+                            new THREE.Vector3(-0.5, 0.5, 0), new THREE.Vector3(0.5, 0.5, 0),
+                            new THREE.Vector3(0.5, -0.5, 0), new THREE.Vector3(-0.5, -0.5, 0)
+                        ];
+                        const markerCorners = localCorners.map(corner => corner.clone().applyMatrix4(markerMatrix));
+                        this.textureContext.clearRect(0, 0, this.textureCanvas.width, this.textureCanvas.height);
+                        const screenCoords = markerCorners.map(corner => {
+                            const vector = corner.project(this.el.sceneEl.camera);
+                            return { x: (vector.x + 1) * this.video.videoWidth / 2, y: (-vector.y + 1) * this.video.videoHeight / 2 };
+                        });
+                        this.drawPerspectiveCorrectedImage(screenCoords);
+                        this.texture.needsUpdate = true;
+                    } catch(e) { 
+                        if (this.tickCounter % 300 === 0) {
+                             console.error("[AR LOG] Error durante la proyección de textura:", e);
+                        }
+                    }
+                }
+                this.tickCounter++;
+            },
+            drawPerspectiveCorrectedImage: function(points) {
+                const ctx = this.textureContext, canvas = this.textureCanvas;
+                const to = [{ x: 0, y: 0 }, { x: canvas.width, y: 0 }, { x: canvas.width, y: canvas.height }, { x: 0, y: canvas.height }];
+                ctx.save(); ctx.beginPath(); ctx.moveTo(to[0].x, to[0].y); ctx.lineTo(to[1].x, to[1].y); ctx.lineTo(to[2].x, to[2].y); ctx.lineTo(to[3].x, to[3].y); ctx.closePath(); ctx.clip();
+                this.drawTriangle(points[0], points[1], points[3], to[0], to[1], to[3]);
+                this.drawTriangle(points[1], points[2], points[3], to[1], to[2], to[3]);
+                ctx.restore();
+            },
+            drawTriangle: function(p0, p1, p2, t0, t1, t2) {
+                const ctx = this.textureContext, video = this.video;
+                ctx.beginPath(); ctx.moveTo(t0.x, t0.y); ctx.lineTo(t1.x, t1.y); ctx.lineTo(t2.x, t2.y); ctx.closePath(); ctx.clip();
+                ctx.save();
+                const det = p1.x * p2.y + p0.x * p1.y + p2.x * p0.y - p1.x * p0.y - p2.x * p1.y - p0.x * p2.y;
+                if (Math.abs(det) < 1e-8) { ctx.restore(); return; }
+                const a = (p2.y * t0.x - p0.y * t2.x + (p0.y - p2.y) * t1.x) / det, b = (p2.x * t0.x - p0.x * t2.x + (p0.x - p2.x) * t1.x) / det, c = t0.x - a * p0.x - b * p0.y;
+                const d = (p2.y * t0.y - p0.y * t2.y + (p0.y - p2.y) * t1.y) / det, e = (p2.x * t0.y - p0.x * t2.y + (p0.x - p2.x) * t1.y) / det, f = t0.y - d * p0.x - e * p0.y;
+                ctx.transform(a, d, b, e, c, f); ctx.drawImage(video, 0, 0);
+                ctx.restore();
+            }
+        });
         AFRAME.registerComponent('ar-zoomer', {
             schema: { zoomSpeed: { default: 0.1 } },
             init: function () {
@@ -325,6 +428,10 @@
                 grid.appendChild(img);
             });
             container.appendChild(grid);
+        }
+
+        function clearAndReload() {
+            window.location.reload();
         }
 
         async function handleFileUploads() {
@@ -579,7 +686,14 @@
                     <a-assets><a-asset-item id="model-0" src="${asset.modelDataUrl}"></a-asset-item></a-assets>
                     <a-camera position="0 0 0" look-controls="enabled: false" fov="75"></a-camera>
                     <a-entity mindar-image-target="targetIndex: 0">
-                        <a-gltf-model src="#model-0" position="${t.position.x} ${t.position.y} ${t.position.z}" rotation="${t.rotation.x} ${t.rotation.y} ${t.rotation.z}" scale="${finalScale} ${finalScale} ${finalScale}" ar-rotator ar-zoomer></a-gltf-model>
+                        <a-gltf-model src="#model-0" 
+                            position="${t.position.x} ${t.position.y} ${t.position.z}" 
+                            rotation="${t.rotation.x} ${t.rotation.y} ${t.rotation.z}" 
+                            scale="${finalScale} ${finalScale} ${finalScale}" 
+                            ar-rotator 
+                            ar-zoomer
+                            texture-from-video>
+                        </a-gltf-model>
                     </a-entity>
                 </a-scene>
             `;
@@ -655,6 +769,7 @@
 
         // --- Event Listeners ---
         document.getElementById('load-from-upload-btn').addEventListener('click', handleFileUploads);
+        document.getElementById('clear-cache-btn').addEventListener('click', clearAndReload);
         document.getElementById('goto-editor-btn').addEventListener('click', () => navigateTo('page-editor'));
         document.getElementById('goto-ar-btn').addEventListener('click', () => navigateTo('page-ar'));
         document.getElementById('back-to-upload-btn').addEventListener('click', () => navigateTo('page-upload'));
@@ -694,6 +809,7 @@
     </script>
 </body>
 </html>
+
 
 
 
